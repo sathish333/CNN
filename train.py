@@ -24,7 +24,7 @@ import argparse
 
 data_prefix='../../Downloads/inaturalist_12K/'
 
-transform = transforms.Compose([
+test_transform = transforms.Compose([
                         transforms.Resize((224, 224)),
                         transforms.ToTensor(),
                          transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -32,14 +32,11 @@ transform = transforms.Compose([
                         ])
 
 # loading data
-train_dataset = torchvision.datasets.ImageFolder(root=data_prefix+'train', transform=transform)
-test_dataset = torchvision.datasets.ImageFolder(root=data_prefix+'val', transform=transform)
 
-train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
-
-idx_to_class = {v:k for k, v in train_dataset.class_to_idx.items()}
-
+def get_data_loader(path,batch_size,transform,shuffle=False):
+    dataset=torchvision.datasets.ImageFolder(root=data_prefix+'train', transform=transform)
+    return dataset,DataLoader(dataset, batch_size=16, shuffle=shuffle)
+    
 
 def getActivation(function):
     if function=='ReLU':
@@ -65,19 +62,19 @@ class Model(pl.LightningModule):
         layers=[]
         input_channels=3
         num_layers=5
-        kernel_size=3
+        kernel_size=config.kernel_size
         kernel_stride=1
-        max_pool_size=2
-        max_pool_stride=2
+        max_pool_size=config.pool_size
+        max_pool_stride=max_pool_size
         filters=[]
         if(config.filter_organization=='same'):
-            filters=[config.filter_size]*num_layers
+            filters=[config.filters_size]*num_layers
         elif(config.filter_organization=='double'):
-            filters.append(config.filter_size)
+            filters.append(config.filters_size)
             for i in range(4):
                 filters.append(filters[-1]*2)
         elif(config.filter_organization=='halve'):
-            filters.append(config.filter_size)
+            filters.append(config.filters_size)
             for i in range(4):
                 filters.append(filters[-1]//2)
 
@@ -142,7 +139,7 @@ def model_fit(params):
     print("Building the model with provided hyper parameters...",params)
     
     if(params.data_augumentation=='Yes'):
-        transform = transforms.Compose([
+        train_transform = transforms.Compose([
                     transforms.Resize((224, 224)),
                     transforms.ToTensor(),
                     transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225]),
@@ -150,18 +147,17 @@ def model_fit(params):
                     transforms.RandomRotation(10),
                    ])
     else:
-        transform = transforms.Compose([
+        train_transform = transforms.Compose([
                     transforms.Resize((224, 224)),
                     transforms.ToTensor(),
                      transforms.Normalize(mean=[0.485, 0.456, 0.406],
                            std=[0.229, 0.224, 0.225])
                     ])
-
-
-    train_dataset = torchvision.datasets.ImageFolder(root=data_prefix+'train', transform=transform)
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+        
+    
+    _,train_loader=get_data_loader(data_prefix+'train',params.batch_size,train_transform,True)
     model = Model(params) 
-    trainer = pl.Trainer(max_epochs=params.epochs,accelerator="auto",limit_train_batches=1) 
+    trainer = pl.Trainer(max_epochs=params.epochs,accelerator="auto",devices='auto') 
     trainer.fit(model,train_loader)
     return model,trainer
 
@@ -172,30 +168,36 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description = 'Set Hyper Parameters')
     parser.add_argument('-wp'   , '--wandb_project'  , type = str  , default='CS22M080',metavar = '', help = 'WandB Project Name (Non-Empty String)')
     parser.add_argument('-we'   , '--wandb_entity'   , type = str  , default='CS22M080',metavar = '', help = 'WandB Entity Name (Non-Empty String)')
-    parser.add_argument('-e'    , '--epochs'         , type = int  , default=1,metavar = '', help = 'Number of Epochs (Positive Integer)')
+    parser.add_argument('-e'    , '--epochs'         , type = int  , default=10,metavar = '', help = 'Number of Epochs (Positive Integer)')
     parser.add_argument('-b'    , '--batch_size'     , type = int  , default=16,metavar = '', help = 'Batch Size (Positive Integer)')
     parser.add_argument('-lr'   , '--learning_rate'  , type = float, default=0.0001,metavar = '', help = 'Learning Rate (Positive Float)')
     parser.add_argument('-nl'  , '--num_layers'     , type = int  , default=5,metavar = '', help = '')
-    parser.add_argument('-a'    , '--activation'     , type = str  , default='Mish',metavar = '', help = '',choices=["ReLU", "Gelu", "Mish", ""] )
-    parser.add_argument('-fs'   , '--filter_size'  , type = int  , default=32,metavar = '', help = '')
-    parser.add_argument('-bn'   , '--batch_normalisation'  , type = bool  , default=True,metavar = '', help = '')
-    parser.add_argument('-da'   , '--data_augumentation'  , type = bool  , default=True,metavar = '', help = '')
+    parser.add_argument('-a'    , '--activation'     , type = str  , default='Mish',metavar = '', help = '',choices=["ReLU", "GELU",'SiLU','Mish'] )
+    parser.add_argument('-fs'   , '--filters_size'  , type = int  , default=32,metavar = '', help = 'number of filters')
+    parser.add_argument('-bn'   , '--batch_normalisation'  , type = str  , default='Yes',metavar = '', help = '')
+    parser.add_argument('-da'   , '--data_augumentation'  , type = str  , default='Yes',metavar = '', help = '')
     parser.add_argument('-fo'   , '--filter_organization'  , type = str  , default='same',metavar = '', help = '')
     parser.add_argument('-dl'   , '--dense_layer_size'  , type = int  , default=256,metavar = '', help = '')
     parser.add_argument('-do'   , '--dropout'  , type = float  , default=0.0,metavar = '', help = '')
+    parser.add_argument('-ks'   , '--kernel_size'  , type = int  , default=3,metavar = '', help = 'Each of the filter size')
+    parser.add_argument('-ps'   , '--pool_size'  , type = int  , default=2,metavar = '', help = 'each of max pool size')
+    
     
   
     
     # Parse the Input Args
     params = vars(parser.parse_args())
-    wandb.init(project=params['wandb_project'],config=params)
+    wandb.init(project=params['wandb_project'],config=params,log_code=False)
     params=SimpleNamespace(**params)
-    run_name=f'FZ-{params.filter_size} AF - {params.activation} filter_org- {params.filter_organization} batch_norm -{params.batch_normalisation} data_aug -{params.data_augumentation} dropout- {params.dropout}'
+    test_dataset,test_loader=get_data_loader(data_prefix+'train',params.batch_size,test_transform)
+    run_name=f'FZ-{params.filters_size} AF - {params.activation} filter_org- {params.filter_organization} batch_norm -{params.batch_normalisation} data_aug -{params.data_augumentation} dropout- {params.dropout}'
     wandb.run.name=run_name
     model,trainer=model_fit(params)
     print("training completed")
     test_accuracy=calc_acc(test_loader,test_dataset.targets,trainer,model)
-    print(f"final test accuracy: {test_accuracy:.2f}")
+    print("*"*50)
+    print(f"Final Test accuracy: {test_accuracy:.2f}")
+    print("*"*50)
     wandb.log({'test accuracy':test_accuracy})
     wandb.finish()
 
