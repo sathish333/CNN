@@ -2,9 +2,9 @@ This repository contains solutions for Assignment-2.
 
 # Part A:
 
-Objective is to a build convolutional network using pytorch which can classify given image to one of the target classes.
+**Objective:** To a build convolutional network using pytorch which can classify given image to one of the target classes.
 
-Dataset: This dataset is subset of original *iNaturalist Dataset* which includes various living organisms images.
+**Dataset**: Subset of original *iNaturalist Dataset* which includes various living organisms images.
 * Number of classes: 10
 * Number of samples in train: 10K
 * Number fo samples in test: 2K
@@ -12,18 +12,20 @@ Dataset: This dataset is subset of original *iNaturalist Dataset* which includes
 20% of the data from train is kept aside as validation data.
 ## Folder structure
 
-* *PartA_CNN.ipynb:*  Containes the code for Hyperparameters search using WandB.
-* *CNN_Best_Model.ipynb:* Building the final model based on best configuration obtained.
-* *train.py*: Builds and trains CNN based on arguments passed from the command line. Default values are set as per best configuration.
+* **PartA_CNN.ipynb:**  Contains the code for Hyperparameters search using WandB.
+* **CNN_Best_Model.ipynb:** Building the final model based on best configuration obtained.
+* **train.py**: Builds and trains CNN based on arguments passed from the command line. Default values are set as per best configuration.
 
 
 
 ## How to use:
 * In the first line of  ```train.py```, change the data path accordingly.<br><br>
 Then run the command 
-  ``` python train.py``` <br>  
+  ``` python train.py``` > It trains a model with provided configuaration and prints test accuracy. 
 
-One can overwrite the default values by passing command line aruguments.
+
+* One can overwrite the default values by passing command line aruguments.
+
 
 **Arguments supported:**
 <br>
@@ -40,7 +42,7 @@ One can overwrite the default values by passing command line aruguments.
 | `-fs`, `--filters_size` | 32 | Number of filters in first conv layer |
 | `-fo`, `--filter_organization` | double | Specifies how the number of filters in each conv is going to be. |
 | `-ks`, `--kernel_size` | 3 | Each of conv kernel size |
-| `-a`, `--activation` | Mish | choices:  ["RelU", "GELI", "SiLU", "Mish"] |
+| `-a`, `--activation` | Mish | choices:  ["RelU", "GELU", "SiLU", "Mish"] |
 | `-do`, `--data_augumentation` | Yes | To enable data augumentation or not. |
 | `-bn`, `--batch_normalisation` | Yes | To include batch norm or not. |
 | `-ps`, `--pool_size` | 2 | each of the max pool window |

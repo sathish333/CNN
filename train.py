@@ -93,6 +93,10 @@ class Model(pl.LightningModule): # Building the model by extending lightning mod
             layers.append(getActivation(config.activation)) # activation 
             if(config.batch_normalisation=='Yes'): # if batch norm is enabled then add accordingly.
                 layers.append(nn.BatchNorm2d(filters[i+1]))
+        if(out_height<=0):
+            print("Configuration is NOT valid as the output is becoming empty..")
+            print("Exiting...")
+            exit()
         layers.append(nn.Flatten())
         layers.append(nn.Dropout(config.dropout)) # dropout at FC layer
         layers.append(nn.Linear(out_height*out_height*filters[-1],config.dense_layer_size))
@@ -170,6 +174,8 @@ def model_fit(params):
 
 
 if __name__=="__main__": 
+    
+    #adding support for command line arguments
     parser = argparse.ArgumentParser(description = 'Set Hyper Parameters')
     parser.add_argument('-wp'   , '--wandb_project'  , type = str  , default='CS22M080',metavar = '', help = 'WandB Project Name (Non-Empty String)')
     parser.add_argument('-we'   , '--wandb_entity'   , type = str  , default='CS22M080',metavar = '', help = 'WandB Entity Name (Non-Empty String)')
@@ -178,7 +184,7 @@ if __name__=="__main__":
     parser.add_argument('-lr'   , '--learning_rate'  , type = float, default=0.0001,metavar = '', help = 'Learning Rate (Positive Float)')
     parser.add_argument('-nl'  , '--num_layers'     , type = int  , default=5,metavar = '', help = '')
     parser.add_argument('-a'    , '--activation'     , type = str  , default='Mish',metavar = '', help = '',choices=["ReLU", "GELU",'SiLU','Mish'] )
-    parser.add_argument('-fs'   , '--filters_size'  , type = int  , default=32,metavar = '', help = 'number of filters')
+    parser.add_argument('-fs'   , '--filters_size'  , type = int  , default=32,metavar = '', help = 'number of filters in initial conv layer')
     parser.add_argument('-bn'   , '--batch_normalisation'  , type = str  , default='Yes',metavar = '', help = '')
     parser.add_argument('-da'   , '--data_augumentation'  , type = str  , default='Yes',metavar = '', help = '')
     parser.add_argument('-fo'   , '--filter_organization'  , type = str  , default='same',metavar = '', help = '',choices=['same','double','half'])
