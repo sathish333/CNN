@@ -19,7 +19,7 @@ Dataset: This dataset is subset of original *iNaturalist Dataset* which includes
 
 
 ## How to use:
-* In the first line, change the data path accordingly.<br><br>
+* In the first line of  ```train.py```, change the data path accordingly.<br><br>
 Then run the command 
   ``` python train.py``` <br>  
 
